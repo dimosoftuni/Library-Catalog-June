@@ -5,9 +5,10 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch: 
 
 jobs:
-  build:
+  build_and_test:
     runs-on: ubuntu-latest
 
     steps:
@@ -28,3 +29,35 @@ jobs:
       run: npx playwright install  
     - name: Start UI tests
       run: npm run test:ui
+
+  deploy-backend:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs: build_and_test
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+      - name: Deploy backend
+        uses: JorgeLNJunior/render-deploy@v1.4.4
+        with:
+          service_id: ${{ secrets.BACKEND_API_KEY }}
+          api_key: ${{ secrets.RENDER_KEY }}
+          clear_cache: true
+          wait_deploy: true
+          github_token: ${{ secrets.TOKEN_GH }}
+
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs: deploy-backend
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+      - name: Deploy backend
+        uses: JorgeLNJunior/render-deploy@v1.4.4
+        with:
+          service_id: ${{ secrets.FRONTEND_API_KEY }}
+          api_key: ${{ secrets.RENDER_KEY }}
+          clear_cache: true
+          wait_deploy: true
+          github_token: ${{ secrets.TOKEN_GH }}
